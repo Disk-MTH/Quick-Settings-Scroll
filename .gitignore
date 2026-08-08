@@ -1,0 +1,26 @@
+# Packaged zip
+*.shell-extension.zip
+build/
+dist/
+
+# Editor / OS
+.idea/
+*.swp
+*~
+.DS_Store
+
+# VS Code: keep shared tasks/launch/settings/extensions but drop personal state
+.vscode/*.code-workspace
+.vscode/.ropeproject
+.vscode/ipch/
+
+# Node / misc
+node_modules/
+
+# Shell extension checker
+.shexli
+
+# Session notes / scratch
+.remember/
+.superpowers/
+temp/

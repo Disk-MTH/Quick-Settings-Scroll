@@ -1,0 +1,8 @@
+{
+    "uuid": "quick-settings-scroll@diskmth.fr",
+    "name": "Quick Settings Scroll",
+    "description": "Lets the GNOME Quick Settings menu scroll when it is taller than the screen, instead of running off the bottom edge with no way to reach what is down there. Nothing else: no preferences, no panel item, and no visible difference until the menu actually overflows. A stop-gap until GNOME Shell scrolls that menu itself.",
+    "shell-version": ["49", "50"],
+    "url": "https://github.com/Disk-MTH/Quick-Settings-Scroll",
+    "version-name": "1.0.0"
+}

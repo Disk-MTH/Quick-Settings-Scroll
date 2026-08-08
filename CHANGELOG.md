@@ -1,0 +1,56 @@
+# Changelog
+
+All notable changes to this project will be documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [1.0.0] - unreleased
+
+First release. One extension, one job.
+
+### Added
+- The Quick Settings menu scrolls when it is taller than the work area.
+  Measured in a nested shell at 800x600 with sixteen extra toggles: stock, the
+  popup is 782px tall in a 568px work area and everything past the first 568px
+  is unreachable; with the extension it is clamped to 556px and the whole grid
+  is reachable by scrolling.
+- A ceiling on the box pointer, recomputed on every open, on
+  `monitors-changed` and on a scale-factor change. It goes there rather than on
+  `menu.actor` because `QuickSettingsMenu` replaces that actor with a 0x0
+  widget, which is why the one `PanelMenu.Button` already sets constrains
+  nothing; and rather than on the scroll view because the box pointer's
+  `vfunc_get_preferred_height` ends in `themeNode.adjust_preferred_height`, so
+  the figure covers the arrow and the borders with no chrome left to guess at.
+- A capture-phase wheel handler on the box pointer, which is what actually
+  turns the wheel. A scroll view alone does not: a wheel over a quick toggle
+  never reaches it, because the toggles are `St.Button`s and an `St.Button`
+  carries a `ClutterClickGesture` as an actor action, which runs in the capture
+  phase ahead of every signal. Measured in a nested shell with the pointer on a
+  toggle, not one actor from that toggle up to the stage sees the event in
+  either phase. Listening on the way down, on an ancestor of everything in the
+  popup, gets there first. Sliders and the scroll view inside a submenu's list
+  are stepped back for, so the volume and brightness wheels still work --
+  measured, the volume moves and the menu does not. The pointer-emulated copy
+  mutter sends beside each notch is dropped, so the menu moves one scroll unit
+  per notch rather than two.
+- A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
+  saying there is more menu past them. No scrollbar is drawn: one inside a
+  popup this narrow would have to eat into the grid or sit over a toggle.
+- A counterweight brightness effect on each open submenu. The shell dims the
+  whole box pointer while a submenu is up, which worked because the overlay sat
+  outside the box pointer -- the very thing this patch stops being true. The
+  effect follows the overlay's `child-added` and `child-removed`, so a toggle
+  another extension adds later is covered too.
+
+### Notes
+- No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,
+  `getFirstItem`, `open` and `close` go on driving the same `_grid` and
+  `_overlay` objects, only reparented, so other extensions adding toggles see
+  no difference.
+- Disabling restores every actor by index rather than by appending, along with
+  the overlay's three constraints by identity -- which is what leaves the
+  shell's own `updateOffset()` closures driving what they drove before -- its
+  four alignment properties, and the box pointer's original style.
+- A work area of zero height, which the shell really does hand out before the
+  first monitor lands, would make the ceiling negative and collapse the popup
+  to its bare 44px arrow. A ceiling at or below zero is not written at all; the
+  `monitors-changed` that follows recomputes it.
