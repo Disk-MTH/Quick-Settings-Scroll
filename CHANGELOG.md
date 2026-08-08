@@ -53,6 +53,29 @@ First release. One extension, one job.
   scroll and clipped to the view instead of being reparented into it. Measured:
   with a submenu open, the shell's effect is on the box pointer at its own
   -0.402 and there are zero effects on the grid and zero on the submenu.
+- A scroll view of the overlay's own, laid exactly over the grid's and driven
+  from the same adjustment, which brings the clipping, the scroll tracking and
+  the edge fade from St instead of by hand. It stays a sibling of the box
+  pointer, so the dim still never reaches it. Three details, each measured:
+  the shell's own three overlay constraints are moved onto the view rather than
+  a new one invented, because BindConstraint copies the source's raw position
+  within *its* parent and binding to the grid's view landed at 19,19 instead of
+  over the grid; height is bound separately, since those three carry position
+  and width only; and the range comes from a spacer child bound to the grid's
+  content height, because st_viewport writes its adjustment's bounds from the
+  preferred height of its children and ignores a height set on itself -- both
+  other ways left the view stopping at 240px against the grid's 618, with an
+  open submenu ceasing to follow part way down.
+- A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
+  saying there is more menu past them. No scrollbar is drawn: one inside a
+  popup this narrow would have to eat into the grid or sit over a toggle.
+- The shell's own submenu dim, left completely alone. It dims the box pointer,
+  so everything inside recedes and the overlay, sitting outside, keeps its
+  colours -- which is right only while the overlay stays outside, so it does.
+  The grid alone goes into the scroll view; the overlay is translated by the
+  scroll and clipped to the view instead of being reparented into it. Measured:
+  with a submenu open, the shell's effect is on the box pointer at its own
+  -0.402 and there are zero effects on the grid and zero on the submenu.
 - The overlay kept in step by transform rather than by relayout. Its submenus
   are placed by BindConstraints against the toggles, and those answer with
   positions from the unscrolled grid however far the wheel has been turned:

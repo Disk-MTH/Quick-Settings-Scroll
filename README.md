@@ -102,13 +102,20 @@ all rather than merely look right:
   it uses, and even the right figure clips white text to grey on the way back
   up. Leaving the overlay outside and moving it by hand instead means the dim,
   the colours and the layering are the shell's own, unmodified.
-- **The overlay keeps up by transform.** Its submenus are placed by
-  `BindConstraint`s against the toggles, and those answer with positions from
-  the unscrolled grid however far the wheel has been turned: measured, scroll
-  150px and the toggle moves from y=387 to y=237 while its submenu stays at
-  435. So the overlay is translated by the scroll, and the clip is offset to
-  match. Measured after: toggle at 237, submenu at 285 — the same 48px gap it
-  had at rest.
+- **The overlay gets a scroll view of its own.** Laid exactly over the grid's,
+  driven from the same adjustment, still a sibling of the box pointer so the
+  dim never reaches it. St then does the rest: it clips, so a submenu
+  travelling with a scrolled toggle cannot run out of the popup; it keeps up,
+  because its viewport translates what is inside; and it fades at whichever
+  edge has content past it, from the same `-st-vfade-offset`. Three fiddly
+  details, all measured: the shell's own three overlay constraints are moved
+  onto the view rather than a new one invented, because `BindConstraint` copies
+  the source's raw position within *its* parent (binding to the grid's view
+  landed at 19,19 instead of over the grid); the view's height is bound
+  separately, since those three carry position and width only; and its range
+  comes from a spacer child bound to the grid's content height, because
+  `st_viewport` writes its adjustment's bounds from the preferred height of its
+  *children* and ignores any height set on itself.
 
 No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,
 `getFirstItem`, `open` and `close` go on driving the same `_grid` and
