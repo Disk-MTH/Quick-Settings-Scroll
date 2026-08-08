@@ -5,10 +5,12 @@ UUID        := quick-settings-scroll@diskmth.fr
 USER_EXTDIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 ZIPNAME     := $(UUID).shell-extension.zip
 DEBUGLOG    := /tmp/quick-settings-scroll-debug.log
+# Throwaway config for the nested shell. See the `nested` recipe for why.
+NESTED_CFG  := /tmp/quick-settings-scroll-nested-config
 
 SOURCES     := extension.js $(wildcard lib/*.js)
 
-.PHONY: install uninstall enable disable pack nested debug test-syntax clean help
+.PHONY: install uninstall enable disable pack nested nested-config debug test-syntax clean help
 
 help:
 	@printf "Targets:\n"
@@ -48,10 +50,30 @@ disable:
 # real menu without restarting the session. The nested shell reads the same
 # ~/.local/share, so `install` is all it needs; the small screen is the point,
 # it makes the menu overflow the way this extension exists to fix.
-nested: install
+# The nested shell gets a *copy* of the real dconf, and the override goes in
+# front of dbus-run-session rather than inside it. Both matter.
+#
+# The copy, because a nested session shares the settings database with the
+# live one: anything it writes -- an extension of its own being enabled, a
+# preference it touches -- lands in the config of the desktop you are sitting
+# in. Copying gets the same list of enabled extensions, so the nested menu
+# looks like the real one, without writing back to it.
+#
+# In front, because dconf does not run in this process. It is a D-Bus service
+# the bus activates, and an activated service inherits the *bus's*
+# environment, not its caller's. Exporting XDG_CONFIG_HOME inside the session
+# leaves dconf-service pointed at the real database anyway, which is exactly
+# the trap this comment exists to stop anyone falling into twice.
+nested: install nested-config
+	@env XDG_CONFIG_HOME="$(NESTED_CFG)" dbus-run-session -- gnome-shell --devkit
+
+nested-config:
+	@rm -rf "$(NESTED_CFG)"
+	@mkdir -p "$(NESTED_CFG)/dconf"
+	@cp "$${XDG_CONFIG_HOME:-$$HOME/.config}/dconf/user" "$(NESTED_CFG)/dconf/user" 2>/dev/null \
+	    || printf "No dconf database to copy; the nested shell starts with defaults.\n"
 	@gnome-extensions list --enabled | grep -qx "$(UUID)" \
-	    || printf "Note: not enabled yet, the nested shell will not load it.\n      Run 'make enable' first.\n\n"
-	@dbus-run-session -- gnome-shell --devkit
+	    || printf "Note: not enabled here, so the nested shell will not load it.\n      Run 'make enable' first.\n\n" 
 
 # Same nested shell, with the extension writing down what it sees: what the
 # ceiling came out at, whether there was anything to scroll, and what happened
@@ -61,13 +83,13 @@ nested: install
 # The live session cannot be used for this: GNOME Shell caches extension
 # modules, so `make install` does not reach a shell that is already running.
 # Only a fresh one, nested or after a log out, loads changed code.
-debug: install
-	@gnome-extensions list --enabled | grep -qx "$(UUID)" \
-	    || printf "Note: not enabled yet, the nested shell will not load it.\n      Run 'make enable' first.\n\n"
+debug: install nested-config
 	@printf "Open Quick Settings in the nested window and try to scroll it.\n"
+	@printf "Open a toggle's submenu and try there too.\n"
 	@printf "Close the window when done.\n\n"
 	@rm -f "$(DEBUGLOG)"
-	@dbus-run-session -- env QSS_DEBUG="$(DEBUGLOG)" gnome-shell --devkit || true
+	@env XDG_CONFIG_HOME="$(NESTED_CFG)" QSS_DEBUG="$(DEBUGLOG)" \
+	    dbus-run-session -- gnome-shell --devkit || true
 	@printf "\n===== %s =====\n" "$(DEBUGLOG)"
 	@cat "$(DEBUGLOG)" 2>/dev/null || printf "(nothing written: the extension never ran)\n"
 
@@ -89,3 +111,4 @@ pack:
 
 clean:
 	@rm -f "$(ZIPNAME)"
+	@rm -rf "$(NESTED_CFG)"
