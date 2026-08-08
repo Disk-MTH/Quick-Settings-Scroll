@@ -4,10 +4,11 @@
 UUID        := quick-settings-scroll@diskmth.fr
 USER_EXTDIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 ZIPNAME     := $(UUID).shell-extension.zip
+DEBUGLOG    := /tmp/quick-settings-scroll-debug.log
 
 SOURCES     := extension.js $(wildcard lib/*.js)
 
-.PHONY: install uninstall enable disable pack nested test-syntax clean help
+.PHONY: install uninstall enable disable pack nested debug test-syntax clean help
 
 help:
 	@printf "Targets:\n"
@@ -16,6 +17,7 @@ help:
 	@printf "  enable       Enable the extension via gnome-extensions\n"
 	@printf "  disable      Disable the extension via gnome-extensions\n"
 	@printf "  nested       Install, then run a nested shell with it enabled\n"
+	@printf "  debug        Same, logging what happens to every scroll event\n"
 	@printf "  pack         Build a publishable .shell-extension.zip\n"
 	@printf "  test-syntax  Parse every JS file\n"
 	@printf "  clean        Remove generated files\n"
@@ -49,8 +51,25 @@ disable:
 nested: install
 	@gnome-extensions list --enabled | grep -qx "$(UUID)" \
 	    || printf "Note: not enabled yet, the nested shell will not load it.\n      Run 'make enable' first.\n\n"
-	@dbus-run-session -- env MUTTER_DEBUG_DUMMY_MODE_SPECS=800x600 \
-	    gnome-shell --devkit
+	@dbus-run-session -- gnome-shell --devkit
+
+# Same nested shell, with the extension writing down what it sees: what the
+# ceiling came out at, whether there was anything to scroll, and what happened
+# to every scroll event that reached the popup. Open Quick Settings in the
+# nested window, scroll, close the window, and read the file it prints.
+#
+# The live session cannot be used for this: GNOME Shell caches extension
+# modules, so `make install` does not reach a shell that is already running.
+# Only a fresh one, nested or after a log out, loads changed code.
+debug: install
+	@gnome-extensions list --enabled | grep -qx "$(UUID)" \
+	    || printf "Note: not enabled yet, the nested shell will not load it.\n      Run 'make enable' first.\n\n"
+	@printf "Open Quick Settings in the nested window and try to scroll it.\n"
+	@printf "Close the window when done.\n\n"
+	@rm -f "$(DEBUGLOG)"
+	@dbus-run-session -- env QSS_DEBUG="$(DEBUGLOG)" gnome-shell --devkit || true
+	@printf "\n===== %s =====\n" "$(DEBUGLOG)"
+	@cat "$(DEBUGLOG)" 2>/dev/null || printf "(nothing written: the extension never ran)\n"
 
 # Parse only. Running these would need the shell: they import
 # resource:///org/gnome/shell/..., which exists nowhere else.
