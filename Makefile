@@ -4,13 +4,12 @@
 UUID        := quick-settings-scroll@diskmth.fr
 USER_EXTDIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 ZIPNAME     := $(UUID).shell-extension.zip
-DEBUGLOG    := /tmp/quick-settings-scroll-debug.log
 # Throwaway config for the nested shell. See the `nested` recipe for why.
 NESTED_CFG  := /tmp/quick-settings-scroll-nested-config
 
 SOURCES     := extension.js $(wildcard lib/*.js)
 
-.PHONY: install uninstall enable disable pack nested nested-config debug test-syntax clean help
+.PHONY: install uninstall enable disable pack nested nested-config test-syntax clean help
 
 help:
 	@printf "Targets:\n"
@@ -19,7 +18,6 @@ help:
 	@printf "  enable       Enable the extension via gnome-extensions\n"
 	@printf "  disable      Disable the extension via gnome-extensions\n"
 	@printf "  nested       Install, then run a nested shell with it enabled\n"
-	@printf "  debug        Same, logging what happens to every scroll event\n"
 	@printf "  pack         Build a publishable .shell-extension.zip\n"
 	@printf "  test-syntax  Parse every JS file\n"
 	@printf "  clean        Remove generated files\n"
@@ -50,6 +48,10 @@ disable:
 # real menu without restarting the session. The nested shell reads the same
 # ~/.local/share, so `install` is all it needs; the small screen is the point,
 # it makes the menu overflow the way this extension exists to fix.
+#
+# It is also the only way to see a change at all: GNOME Shell caches extension
+# modules, so `make install` does not reach a shell that is already running.
+# Only a fresh one, nested or after a log out, loads changed code.
 # The nested shell gets a *copy* of the real dconf, and the override goes in
 # front of dbus-run-session rather than inside it. Both matter.
 #
@@ -74,24 +76,6 @@ nested-config:
 	    || printf "No dconf database to copy; the nested shell starts with defaults.\n"
 	@gnome-extensions list --enabled | grep -qx "$(UUID)" \
 	    || printf "Note: not enabled here, so the nested shell will not load it.\n      Run 'make enable' first.\n\n" 
-
-# Same nested shell, with the extension writing down what it sees: what the
-# ceiling came out at, whether there was anything to scroll, and what happened
-# to every scroll event that reached the popup. Open Quick Settings in the
-# nested window, scroll, close the window, and read the file it prints.
-#
-# The live session cannot be used for this: GNOME Shell caches extension
-# modules, so `make install` does not reach a shell that is already running.
-# Only a fresh one, nested or after a log out, loads changed code.
-debug: install nested-config
-	@printf "Open Quick Settings in the nested window and try to scroll it.\n"
-	@printf "Open a toggle's submenu and try there too.\n"
-	@printf "Close the window when done.\n\n"
-	@rm -f "$(DEBUGLOG)"
-	@env XDG_CONFIG_HOME="$(NESTED_CFG)" QSS_DEBUG="$(DEBUGLOG)" \
-	    dbus-run-session -- gnome-shell --devkit || true
-	@printf "\n===== %s =====\n" "$(DEBUGLOG)"
-	@cat "$(DEBUGLOG)" 2>/dev/null || printf "(nothing written: the extension never ran)\n"
 
 # Parse only. Running these would need the shell: they import
 # resource:///org/gnome/shell/..., which exists nowhere else.

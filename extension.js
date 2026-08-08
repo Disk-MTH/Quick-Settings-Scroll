@@ -21,7 +21,7 @@ export default class QuickSettingsScrollExtension extends Extension {
     disable() {
         // The menu outlives us -- it is the shell's, and it is still there
         // after disable() -- so the patch has to come off, not merely stop.
-        this._patch?.revert();
+        this._patch.revert();
         this._patch = null;
     }
 }

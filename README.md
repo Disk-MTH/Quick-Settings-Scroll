@@ -129,10 +129,8 @@ gnome-extensions enable quick-settings-scroll@diskmth.fr
 
 `make nested` tries it in a throwaway shell in its own window, on a copy of
 your settings so the nested menu carries the same extensions without writing
-anything back. Resize that window short to make the menu overflow. `make
-debug` is the same thing with the extension writing down what it does with
-every scroll event, which is what to attach to a bug report. Pack a release
-zip with `make pack`.
+anything back. Resize that window short to make the menu overflow. Pack a
+release zip with `make pack`.
 
 Note that `make install` cannot reach a shell that is already running: GNOME
 Shell caches extension modules, so changed code needs a fresh shell — nested,
@@ -143,7 +141,6 @@ or after a log out.
 ```
 extension.js                  # entry point: apply on enable, revert on disable
 lib/quick-settings-scroll.js  # the patch itself
-lib/debug.js                  # opt-in logging, silent unless QSS_DEBUG is set
 stylesheet.css                # the fade at the scrolled edges
 ```
 
