@@ -24,7 +24,7 @@ not scroll, it is just cut off.
 Measured in a nested shell at 800x600, with sixteen extra toggles in the menu:
 
 | | popup height | work area | reachable |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | stock GNOME Shell 50 | 782px | 568px | the top 568px, the rest is off-screen |
 | with this extension | 556px | 568px | all of it, by scrolling |
 
@@ -32,89 +32,6 @@ GNOME has an open merge request for this,
 [gnome-shell!3272](https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/3272).
 It was opened in April 2024 and is still unmerged. This extension exists until
 it lands.
-
-## How it works
-
-Three things in GNOME Shell 49/50 add up to the bug, and the fix answers all
-three.
-
-1. **The ceiling lands on the wrong actor.** `PanelMenu.Button` does set a
-   `max-height` on `menu.actor` every time a panel menu opens. But
-   `QuickSettingsMenu` replaces `actor` with a 0x0 `St.Widget` that exists only
-   to host the submenu overlay, so that ceiling constrains nothing. The
-   extension puts one on the box pointer instead, where `-arrow-rise` and the
-   borders are already accounted for.
-2. **There is no scroll view at the top level.** `PopupSubMenu` has one, which
-   is why submenus scroll and the menu holding them does not. The extension
-   adds one around the grid.
-3. **The submenus are not inside the popup at all.** `_overlay`, which holds
-   every submenu, is a *sibling* of the box pointer, kept over the right row by
-   constraints, and nothing clips it. Scroll the grid and an open Wi-Fi list
-   travels with its toggle straight out of the menu, over the panel and the
-   desktop. The extension leaves it exactly where it is — which is what keeps
-   the shell's own dim correct — and instead translates it by the scroll and
-   clips it to what the view can show.
-
-```
-   before                             after
-   ------                             -----
-   actor        St.Widget 0x0         actor
-   +- _boxPointer                     +- _boxPointer   <- max-height here
-   |  +- bin                          |  +- bin
-   |     +- box  .quick-settings      |     +- box
-   |        +- _grid                  |        +- scrollView
-   +- _overlay   (submenus)           |           +- viewport
-                                      |              +- _grid
-                                      +- _overlay   (unmoved, translated)
-```
-
-Three consequences are worth naming, because they are what makes this work at
-all rather than merely look right:
-
-- **A scroll view is not enough to turn a wheel.** A wheel over a quick toggle
-  never reaches the view above it: the toggles are `St.Button`s, and an
-  `St.Button` carries a `ClutterClickGesture` as an actor action. Actions run
-  in the capture phase, ahead of every signal, and the event is gone before an
-  ancestor is asked. Measured with the pointer on a toggle, not one actor from
-  that toggle up to the stage sees the event in either phase. The frame around
-  the grid and the gaps between toggles *do* scroll, which is what makes the
-  fault look intermittent rather than total. So the extension listens in the
-  capture phase, on the way down, before any of that can happen.
-- **There are two places to listen, not one.** An open menu holds a modal
-  grab, and under a grab mutter starts delivery at the *grabbed* actor rather
-  than at the top of the tree. With no submenu up the grab root is the menu,
-  so listening on the box pointer catches everything. Open a submenu and the
-  root moves to that submenu, below the box pointer — and every listener above
-  it goes silent. Measured with a submenu open and 729px of range to move: not
-  one listener on the way down fired, and the menu sat still. So the handler
-  is on both roots, the box pointer and each submenu actor, the latter
-  followed through the overlay's `child-added` so a toggle another extension
-  adds later is covered too. What genuinely wants a wheel still gets it: the
-  handler steps back for sliders, and for a scroll view inside a submenu's own
-  list while that list still has somewhere to go.
-- **The dim is not touched at all, and the overlay staying put is what buys
-  that.** The shell dims the box pointer while a submenu is up, so everything
-  inside recedes and the overlay, being outside, keeps its colours. An earlier
-  version of this extension moved the overlay in with the grid to make it
-  scroll, and then had to answer for the dim covering the submenu too — and
-  there is no good answer: the effect is additive through an 8-bit texture, so
-  a counterweight (which is what !3272 tries) needs +0.4 rather than the +0.2
-  it uses, and even the right figure clips white text to grey on the way back
-  up. Leaving the overlay outside and moving it by hand instead means the dim,
-  the colours and the layering are the shell's own, unmodified.
-- **The overlay keeps up by transform.** Its submenus are placed by
-  `BindConstraint`s against the toggles, and those answer with positions from
-  the unscrolled grid however far the wheel has been turned: measured, scroll
-  150px and the toggle moves from y=387 to y=237 while its submenu stays at
-  435. So the overlay is translated by the scroll, and the clip is offset to
-  match. Measured after: toggle at 237, submenu at 285 — the same 48px gap it
-  had at rest.
-
-No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,
-`getFirstItem`, `open` and `close` go on driving the same `_grid` and
-`_overlay` objects, which have only been reparented, so other extensions
-adding toggles see no difference. Disabling the extension puts every actor,
-constraint, alignment and style back exactly where it was.
 
 ## Install
 
@@ -163,13 +80,6 @@ edge that has content past it, so a menu that fits looks untouched.
 A bar inside a popup this narrow has to either eat into the grid or sit over a
 toggle, and both look wrong. The fade at the top and bottom edges says there is
 more menu past them instead.
-
-### When do I uninstall it?
-
-Once GNOME Shell scrolls that menu itself, whether through
-[!3272](https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/3272) or
-something else. This extension is a stop-gap and has no reason to outlive the
-bug.
 
 ## License
 
