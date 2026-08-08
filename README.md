@@ -77,10 +77,20 @@ all rather than merely look right:
   ancestor is asked. Measured with the pointer on a toggle, not one actor from
   that toggle up to the stage sees the event in either phase. The frame around
   the grid and the gaps between toggles *do* scroll, which is what makes the
-  fault look intermittent rather than total. So the extension listens on the
-  box pointer in the capture phase, on the way down, before any of that can
-  happen. What genuinely wants a wheel still gets it: the handler steps back
-  for sliders and for the scroll view inside a submenu's list.
+  fault look intermittent rather than total. So the extension listens in the
+  capture phase, on the way down, before any of that can happen.
+- **There are two places to listen, not one.** An open menu holds a modal
+  grab, and under a grab mutter starts delivery at the *grabbed* actor rather
+  than at the top of the tree. With no submenu up the grab root is the menu,
+  so listening on the box pointer catches everything. Open a submenu and the
+  root moves to that submenu, below the box pointer — and every listener above
+  it goes silent. Measured with a submenu open and 729px of range to move: not
+  one listener on the way down fired, and the menu sat still. So the handler
+  is on both roots, the box pointer and each submenu actor, the latter
+  followed through the overlay's `child-added` so a toggle another extension
+  adds later is covered too. What genuinely wants a wheel still gets it: the
+  handler steps back for sliders, and for a scroll view inside a submenu's own
+  list while that list still has somewhere to go.
 - **An open submenu has to be un-dimmed.** The shell dims the whole box pointer
   while a submenu is up so the grid recedes behind it. That relied on the
   overlay sitting *outside* the box pointer, which is exactly what stops being
@@ -104,15 +114,23 @@ make install
 gnome-extensions enable quick-settings-scroll@diskmth.fr
 ```
 
-`make nested` tries it in a throwaway shell in its own window, at 800x600 so
-the menu actually overflows, without touching the running session. Pack a
-release zip with `make pack`.
+`make nested` tries it in a throwaway shell in its own window, on a copy of
+your settings so the nested menu carries the same extensions without writing
+anything back. Resize that window short to make the menu overflow. `make
+debug` is the same thing with the extension writing down what it does with
+every scroll event, which is what to attach to a bug report. Pack a release
+zip with `make pack`.
+
+Note that `make install` cannot reach a shell that is already running: GNOME
+Shell caches extension modules, so changed code needs a fresh shell — nested,
+or after a log out.
 
 ## Project layout
 
 ```
 extension.js                  # entry point: apply on enable, revert on disable
 lib/quick-settings-scroll.js  # the patch itself
+lib/debug.js                  # opt-in logging, silent unless QSS_DEBUG is set
 stylesheet.css                # the fade at the scrolled edges
 ```
 

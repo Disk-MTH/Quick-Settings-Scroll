@@ -20,8 +20,8 @@ First release. One extension, one job.
   nothing; and rather than on the scroll view because the box pointer's
   `vfunc_get_preferred_height` ends in `themeNode.adjust_preferred_height`, so
   the figure covers the arrow and the borders with no chrome left to guess at.
-- A capture-phase wheel handler on the box pointer, which is what actually
-  turns the wheel. A scroll view alone does not: a wheel over a quick toggle
+- Capture-phase wheel handlers on the box pointer *and* on every submenu
+  actor, which together are what actually turn the wheel. A scroll view alone does not: a wheel over a quick toggle
   never reaches it, because the toggles are `St.Button`s and an `St.Button`
   carries a `ClutterClickGesture` as an actor action, which runs in the capture
   phase ahead of every signal. Measured in a nested shell with the pointer on a
@@ -29,9 +29,20 @@ First release. One extension, one job.
   either phase. Listening on the way down, on an ancestor of everything in the
   popup, gets there first. Sliders and the scroll view inside a submenu's list
   are stepped back for, so the volume and brightness wheels still work --
-  measured, the volume moves and the menu does not. The pointer-emulated copy
-  mutter sends beside each notch is dropped, so the menu moves one scroll unit
-  per notch rather than two.
+  measured, the volume moves and the menu does not; and for a scroll view
+  inside a submenu's own list, while that list still has somewhere to go. The
+  pointer-emulated copy mutter sends beside each notch is dropped, so the menu
+  moves one scroll unit per notch rather than two.
+- Two listeners rather than one, because an open menu holds a modal grab and
+  under a grab mutter starts delivery at the grabbed actor rather than at the
+  top of the tree. With no submenu up the grab root is the menu itself; open
+  one and the root moves to that submenu, below the box pointer, and every
+  listener above it goes silent. Measured in a nested shell with a submenu
+  open and 729px of range: with the box-pointer listener alone, three wheel
+  notches moved nothing and nothing was logged; with the submenu listener
+  added, the same three notches moved the menu 72.1px each. Submenus are
+  followed through the overlay's `child-added`, so a toggle another extension
+  adds later is covered too.
 - A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
   saying there is more menu past them. No scrollbar is drawn: one inside a
   popup this narrow would have to eat into the grid or sit over a toggle.
