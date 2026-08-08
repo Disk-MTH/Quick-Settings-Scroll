@@ -46,6 +46,25 @@ First release. One extension, one job.
 - A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
   saying there is more menu past them. No scrollbar is drawn: one inside a
   popup this narrow would have to eat into the grid or sit over a toggle.
+- The shell's own submenu dim, left completely alone. It dims the box pointer,
+  so everything inside recedes and the overlay, sitting outside, keeps its
+  colours -- which is right only while the overlay stays outside, so it does.
+  The grid alone goes into the scroll view; the overlay is translated by the
+  scroll and clipped to the view instead of being reparented into it. Measured:
+  with a submenu open, the shell's effect is on the box pointer at its own
+  -0.402 and there are zero effects on the grid and zero on the submenu.
+- The overlay kept in step by transform rather than by relayout. Its submenus
+  are placed by BindConstraints against the toggles, and those answer with
+  positions from the unscrolled grid however far the wheel has been turned:
+  measured, scrolling 150px moves the toggle from y=387 to y=237 while its
+  submenu stays at 435. Translating the overlay by the scroll, and offsetting
+  its clip to match, puts the submenu at 285 -- the same 48px below its toggle
+  it sits at rest. The clip is needed because nothing else clips the overlay:
+  scrolled, a long submenu would otherwise travel out of the popup and paint
+  over the panel and the desktop.
+- A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
+  saying there is more menu past them. No scrollbar is drawn: one inside a
+  popup this narrow would have to eat into the grid or sit over a toggle.
 - The shell's submenu dim, relayed from the box pointer onto the grid. It dims
   the whole box pointer while a submenu is up, which worked because the overlay
   sat outside it -- the very thing this patch stops being true, so left alone

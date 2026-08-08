@@ -49,9 +49,11 @@ three.
    adds one around the grid.
 3. **The submenus are not inside the popup at all.** `_overlay`, which holds
    every submenu, is a *sibling* of the box pointer, kept over the right row by
-   constraints. Scrolling the grid on its own would leave an open Wi-Fi list
-   painted over the panel and the desktop. The extension moves the grid and the
-   overlay into one `St.Viewport` so they travel together.
+   constraints, and nothing clips it. Scroll the grid and an open Wi-Fi list
+   travels with its toggle straight out of the menu, over the panel and the
+   desktop. The extension leaves it exactly where it is — which is what keeps
+   the shell's own dim correct — and instead translates it by the scroll and
+   clips it to what the view can show.
 
 ```
    before                             after
@@ -61,10 +63,9 @@ three.
    |  +- bin                          |  +- bin
    |     +- box  .quick-settings      |     +- box
    |        +- _grid                  |        +- scrollView
-   +- _overlay   (submenus)           |           +- stack  BinLayout
+   +- _overlay   (submenus)           |           +- viewport
                                       |              +- _grid
-                                      |              +- _overlay
-                                      +- (empty)
+                                      +- _overlay   (unmoved, translated)
 ```
 
 Three consequences are worth naming, because they are what makes this work at
@@ -91,23 +92,23 @@ all rather than merely look right:
   adds later is covered too. What genuinely wants a wheel still gets it: the
   handler steps back for sliders, and for a scroll view inside a submenu's own
   list while that list still has somewhere to go.
-- **The dim has to move, not be cancelled.** The shell dims the whole box
-  pointer while a submenu is up, so the grid recedes behind it — and that
-  relied on the overlay sitting *outside* the box pointer, which is exactly
-  what stops being true here. Left alone, the dim covers the submenu too and
-  the whole popup goes dark, the part being used along with the rest.
-  !3272 answers with a counterweight brightness effect winding the submenu back
-  up, and that cannot work: the dim is additive, so cancelling -0.4 needs +0.4
-  rather than the +0.2 it uses, and even the right figure would not do it,
-  because each effect renders through an 8-bit texture — white submenu text
-  clips to 1.0 on the way up and comes back down to 0.6. So the dim is moved
-  instead. The shell's effect stays on the box pointer, where
-  `_setDimmed`'s `ease_property` can still resolve it, but held disabled; an
-  effect of ours on the grid mirrors its brightness. The grid is the one actor
-  holding every toggle and no submenu, which is the distinction the dim is
-  drawing in the first place. One difference from stock follows: the popup's
-  background is painted by the box pointer, so the frame around the grid no
-  longer darkens with the toggles.
+- **The dim is not touched at all, and the overlay staying put is what buys
+  that.** The shell dims the box pointer while a submenu is up, so everything
+  inside recedes and the overlay, being outside, keeps its colours. An earlier
+  version of this extension moved the overlay in with the grid to make it
+  scroll, and then had to answer for the dim covering the submenu too — and
+  there is no good answer: the effect is additive through an 8-bit texture, so
+  a counterweight (which is what !3272 tries) needs +0.4 rather than the +0.2
+  it uses, and even the right figure clips white text to grey on the way back
+  up. Leaving the overlay outside and moving it by hand instead means the dim,
+  the colours and the layering are the shell's own, unmodified.
+- **The overlay keeps up by transform.** Its submenus are placed by
+  `BindConstraint`s against the toggles, and those answer with positions from
+  the unscrolled grid however far the wheel has been turned: measured, scroll
+  150px and the toggle moves from y=387 to y=237 while its submenu stays at
+  435. So the overlay is translated by the scroll, and the clip is offset to
+  match. Measured after: toggle at 237, submenu at 285 — the same 48px gap it
+  had at rest.
 
 No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,
 `getFirstItem`, `open` and `close` go on driving the same `_grid` and
