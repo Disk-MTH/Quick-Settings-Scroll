@@ -46,11 +46,24 @@ First release. One extension, one job.
 - A `-st-vfade-offset` at the top and bottom edges of the grid, the only thing
   saying there is more menu past them. No scrollbar is drawn: one inside a
   popup this narrow would have to eat into the grid or sit over a toggle.
-- A counterweight brightness effect on each open submenu. The shell dims the
-  whole box pointer while a submenu is up, which worked because the overlay sat
-  outside the box pointer -- the very thing this patch stops being true. The
-  effect follows the overlay's `child-added` and `child-removed`, so a toggle
-  another extension adds later is covered too.
+- The shell's submenu dim, relayed from the box pointer onto the grid. It dims
+  the whole box pointer while a submenu is up, which worked because the overlay
+  sat outside it -- the very thing this patch stops being true, so left alone
+  the dim covers the submenu too and the whole popup goes dark including the
+  part being used. !3272's answer, a counterweight brightness effect on the
+  submenu, cannot work: the dim is additive, so cancelling -0.4 needs +0.4 and
+  not the +0.2 it uses, and even that would not do it, because each effect
+  renders through an 8-bit texture and white submenu text clips to 1.0 on the
+  way up to come back down at 0.6. The shell's effect therefore stays on the
+  box pointer, under the name `ease_property` resolves, but held disabled,
+  while an effect of ours on the grid mirrors its brightness -- the grid being
+  the one actor that holds every toggle and no submenu. Driven off brightness
+  rather than off `enabled`, whose notifications interleave with the ease in a
+  way that leaves the dim off at the moment it is wanted. Measured: no submenu,
+  both off; submenu open, ours on at the shell's own -0.402 with no effect on
+  the submenu at all; closed, both off again.
+  Known difference from stock: the popup's background is painted by the box
+  pointer, so the frame around the grid no longer darkens with the toggles.
 
 ### Notes
 - No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,

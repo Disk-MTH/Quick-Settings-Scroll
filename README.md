@@ -67,7 +67,7 @@ three.
                                       +- (empty)
 ```
 
-Two consequences are worth naming, because they are what makes this work at
+Three consequences are worth naming, because they are what makes this work at
 all rather than merely look right:
 
 - **A scroll view is not enough to turn a wheel.** A wheel over a quick toggle
@@ -91,11 +91,23 @@ all rather than merely look right:
   adds later is covered too. What genuinely wants a wheel still gets it: the
   handler steps back for sliders, and for a scroll view inside a submenu's own
   list while that list still has somewhere to go.
-- **An open submenu has to be un-dimmed.** The shell dims the whole box pointer
-  while a submenu is up so the grid recedes behind it. That relied on the
-  overlay sitting *outside* the box pointer, which is exactly what stops being
-  true here. A counterweight brightness effect goes on each submenu while it is
-  visible, the same answer !3272 arrived at.
+- **The dim has to move, not be cancelled.** The shell dims the whole box
+  pointer while a submenu is up, so the grid recedes behind it — and that
+  relied on the overlay sitting *outside* the box pointer, which is exactly
+  what stops being true here. Left alone, the dim covers the submenu too and
+  the whole popup goes dark, the part being used along with the rest.
+  !3272 answers with a counterweight brightness effect winding the submenu back
+  up, and that cannot work: the dim is additive, so cancelling -0.4 needs +0.4
+  rather than the +0.2 it uses, and even the right figure would not do it,
+  because each effect renders through an 8-bit texture — white submenu text
+  clips to 1.0 on the way up and comes back down to 0.6. So the dim is moved
+  instead. The shell's effect stays on the box pointer, where
+  `_setDimmed`'s `ease_property` can still resolve it, but held disabled; an
+  effect of ours on the grid mirrors its brightness. The grid is the one actor
+  holding every toggle and no submenu, which is the distinction the dim is
+  drawing in the first place. One difference from stock follows: the popup's
+  background is painted by the box pointer, so the frame around the grid no
+  longer darkens with the toggles.
 
 No shell method is replaced or wrapped. `addItem`, `insertItemBefore`,
 `getFirstItem`, `open` and `close` go on driving the same `_grid` and
