@@ -2,7 +2,7 @@
     "uuid": "quick-settings-scroll@diskmth.fr",
     "name": "Quick Settings Scroll",
     "description": "Makes the GNOME Quick Settings menu scroll when it is taller than the screen.",
-    "shell-version": ["49", "50"],
+    "shell-version": ["46", "47", "48", "49", "50"],
     "url": "https://github.com/Disk-MTH/Quick-Settings-Scroll",
-    "version-name": "1.0.0"
+    "version-name": "1.0.1"
 }
