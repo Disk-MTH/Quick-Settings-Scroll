@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD033 MD041 -->
 [![GNOME Extensions downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fextensions.gnome.org%2Fextension-info%2F%3Fpk%3D10660&query=%24.downloads&label=downloads&style=flat-square&logo=gnome&logoColor=white&color=4A86CF)](https://extensions.gnome.org/extension/10660/quick-settings-scroll/)
-[![GNOME Shell 49 | 50](https://img.shields.io/badge/GNOME_Shell-49%20%7C%2050-4A86CF?style=flat-square&logo=gnome&logoColor=white)](https://release.gnome.org/)
+[![GNOME Shell 46 to 50](https://img.shields.io/badge/GNOME_Shell-46%20%E2%86%92%2050-4A86CF?style=flat-square&logo=gnome&logoColor=white)](https://release.gnome.org/)
 [![Latest release](https://img.shields.io/github/v/release/Disk-MTH/Quick-Settings-Scroll?style=flat-square&logo=github&label=release&color=4A86CF)](https://github.com/Disk-MTH/Quick-Settings-Scroll/releases/latest)
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-3DA639?style=flat-square)](./LICENSE)
 
