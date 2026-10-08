@@ -3,6 +3,25 @@
 All notable changes to this project will be documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-10-08
+
+### Added
+- GNOME Shell 51 support. The 50-to-51 migration guide breaks no API this
+  extension uses: no `vertical` property, no `St.ButtonMask` renames, no
+  `PopupMenu` animation arguments, no `pointerWatcher`, no
+  `Clutter.get_default_backend`, no `Gio.DBus.makeProxyWrapper`, and
+  `disable()` was already synchronous. The one deprecated mechanism in use,
+  actor `captured-event` listeners, still works in 51; migrating them to
+  `Clutter.ScrollController` is deferred, because the capture-phase
+  interception design (ancestor listener plus dynamic grab-root listeners)
+  would have to be re-proven by measurement.
+
+## [1.0.1] - 2026-08-21
+
+### Changed
+- Widened the supported shell range in `metadata.json` from 49-50 to 46-50
+  (no code change).
+
 ## [1.0.0] - unreleased
 
 First release. One extension, one job.
