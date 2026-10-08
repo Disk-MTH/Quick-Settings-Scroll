@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Quick Settings Scroll entry point.
-// GNOME Shell 49/50 (ESM extensions API).
+// GNOME Shell 49-51 (ESM extensions API).
 //
 // The whole extension is one patch applied to a menu the shell owns, so this
 // file is only its lifecycle: build it on enable, undo it on disable. There

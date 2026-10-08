@@ -1,5 +1,5 @@
 # Quick Settings Scroll: install / package / test.
-# Tested on GNOME Shell 49 and 50.
+# Tested on GNOME Shell 49, 50 and 51.
 
 UUID        := quick-settings-scroll@diskmth.fr
 USER_EXTDIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
